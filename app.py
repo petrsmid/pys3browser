@@ -4,7 +4,7 @@ import humanfriendly
 import logging
 from logging.handlers import RotatingFileHandler
 import os
-import ConfigParser
+import configparser
 import re
 
 logger = logging.getLogger()
@@ -29,13 +29,22 @@ def validate_config_file():
         logging.info("config file exists")
     else:
         logging.error("config file doesn't exists, creating config.")
-        config = ConfigParser.RawConfigParser()
+        config = configparser.RawConfigParser()
         config.add_section('credentials')
         config.set('credentials', 'aws_access_key', '')
         config.set('credentials', 'aws_secret_key', '')
         config.set('credentials', 's3_bucket_name', '')
-        with open(config_file, 'wb') as cfg_file:
+        with open(config_file, 'w') as cfg_file:
             config.write(cfg_file)
+def read_config_file(config_file):
+    config = configparser.RawConfigParser()
+    config.read_file(open(config_file))
+    s3_endpoint_url = config.get('s3_endpoint', 'url', fallback=None)
+    s3_access_id = config.get('credentials', 'aws_access_key', fallback=None)
+    s3_access_key = config.get('credentials', 'aws_secret_key', fallback=None)
+    s3_bucket_name = config.get('credentials', 's3_bucket_name', fallback=None)
+    return s3_endpoint_url, s3_access_id, s3_access_key, s3_bucket_name
+
 
 
 def get_fa_icon(_s3_key):
@@ -79,12 +88,8 @@ def home_page():
     global conn
     global s3_bucket_name
     validate_config_file()
-    config = ConfigParser.ConfigParser()
-    config.readfp(open(config_file))
-    s3_access_id = config.get('credentials', 'aws_access_key')
-    s3_access_key = config.get('credentials', 'aws_secret_key')
-    s3_bucket_name = config.get('credentials', 's3_bucket_name')
-    conn = boto3.client('s3', aws_access_key_id=s3_access_id, aws_secret_access_key=s3_access_key)
+    s3_endpoint_url, s3_access_id, s3_access_key, s3_bucket_name = read_config_file(config_file)
+    conn = boto3.client('s3', endpoint_url=s3_endpoint_url, aws_access_key_id=s3_access_id, aws_secret_access_key=s3_access_key)
     if s3_access_id and s3_access_key and s3_bucket_name:
         return render_template('index.html', bucketname=s3_bucket_name)
     else:
@@ -159,18 +164,25 @@ def browse_further():
 def save_config_file():
     global conn
     global s3_bucket_name
-    config = ConfigParser.RawConfigParser()
-    config.readfp(open(config_file))
+    config = configparser.RawConfigParser()
+    config.read_file(open(config_file))
+
+
+    if request.form['s3_url'] not in ["", None]:
+        if not config.has_section('s3_endpoint'):
+            config.add_section('s3_endpoint')
+        config.set('s3_endpoint', 'url', request.form['s3_url'])
+    if not config.has_section('credentials'):
+        config.add_section('credentials')
     config.set('credentials', 'aws_access_key', request.form['accesskey'])
     config.set('credentials', 'aws_secret_key', request.form['secretkey'])
     config.set('credentials', 's3_bucket_name', request.form['bucketname'])
-    with open(config_file, 'wb') as cfg_file:
+    with open(config_file, 'w') as cfg_file:
         config.write(cfg_file)
         logging.info("credentials saved to file.")
-    s3_access_id = config.get('credentials', 'aws_access_key')
-    s3_access_key = config.get('credentials', 'aws_secret_key')
-    s3_bucket_name = config.get('credentials', 's3_bucket_name')
-    conn = boto3.client('s3', aws_access_key_id=s3_access_id, aws_secret_access_key=s3_access_key)
+
+    s3_endpoint_url, s3_access_id, s3_access_key, s3_bucket_name = read_config_file(config_file)
+    conn = boto3.client('s3', endpoint_url=s3_endpoint_url, aws_access_key_id=s3_access_id, aws_secret_access_key=s3_access_key)
     return redirect('/', code=302)
 
 
@@ -183,4 +195,4 @@ def upload_file():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', port=6123)
