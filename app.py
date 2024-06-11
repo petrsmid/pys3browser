@@ -36,6 +36,9 @@ def validate_config_file():
         config.set('credentials', 's3_bucket_name', '')
         with open(config_file, 'w') as cfg_file:
             config.write(cfg_file)
+
+
+
 def read_config_file(config_file):
     config = configparser.RawConfigParser()
     config.read_file(open(config_file))
