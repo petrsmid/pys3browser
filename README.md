@@ -32,10 +32,10 @@ $ python app.py
    WARNING: Do not use the development server in a production environment.
    Use a production WSGI server instead.
  * Debug mode: off
-2018-09-23 14:01:54,639 werkzeug _log():88 INFO      * Running on http://0.0.0.0:5000/ (Press CTRL+C to quit)
+2018-09-23 14:01:54,639 werkzeug _log():88 INFO      * Running on http://0.0.0.0:6000/ (Press CTRL+C to quit)
 
 ```
-Launch browser and access http://localhost:5000/
+Launch browser and access http://localhost:6000/
 
 ## Pull Request
 If you want to contribute. Open a [pull request](https://github.com/amjad489/pys3browser/pulls)
